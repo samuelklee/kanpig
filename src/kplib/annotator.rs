@@ -160,7 +160,10 @@ fn handle_diploid_single_path<'a>(
         let alt_cov = path.coverage.unwrap();
         let ref_cov = coverage - alt_cov;
         let (genotype, state) = match metrics::genotyper(ref_cov, alt_cov) {
-            metrics::GTstate::Ref | metrics::GTstate::Het => {
+            metrics::GTstate::Ref => {
+                ("0|0", metrics::GTstate::Ref)
+            }
+            metrics::GTstate::Het => {
                 let gt = match path.hp {
                     None => "0|1",
                     Some(1) => "0|1",
@@ -175,6 +178,38 @@ fn handle_diploid_single_path<'a>(
     }
 }
 
+fn handle_diploid_two_paths<'a>(
+    var_idx: &NodeIndex,
+    path1: &PathScore,
+    path2: &PathScore,
+    coverage: u64,
+) -> HandleReturn<'a> {
+    if path1.path.contains(var_idx) || path2.path.contains(var_idx) {
+        let alt_cov = path1.coverage.unwrap() + path2.coverage.unwrap();
+        let ref_cov = coverage - alt_cov;
+        let (genotype, state) = match metrics::genotyper(ref_cov, alt_cov) {
+            metrics::GTstate::Ref => {
+                ("0|0", metrics::GTstate::Ref)
+            }
+            metrics::GTstate::Het => {
+                let gt = match path.hp {
+                    None => "0|1",
+                    Some(1) => "0|1",
+                    _ => "1|0",
+                };
+                (gt, metrics::GTstate::Het)
+            }
+            metrics::GTstate::Hom => ("1|1", metrics::GTstate::Hom),
+            _ => panic!("Cannot happen here"),
+        };
+        (genotype, state, alt_cov, path1.full_target || path2.full_target)
+    }
+    else {
+        ("0|0", metrics::GTstate::Ref, 0, true)
+    }
+}
+
+/*
 fn handle_diploid_two_paths<'a>(
     var_idx: &NodeIndex,
     path1: &PathScore,
@@ -204,6 +239,7 @@ fn handle_diploid_two_paths<'a>(
         (false, false) => ("./.", metrics::GTstate::Non, 0, true),
     }
 }
+*/
 
 fn finalize_annotation(
     entry: RecordBuf,
