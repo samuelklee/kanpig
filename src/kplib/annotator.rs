@@ -126,12 +126,22 @@ fn haploid(
 
     let path1 = &paths[0];
     let handle = match path1.path.contains(var_idx) {
-        true => (
-            "1",
-            metrics::GTstate::Hom,
-            path1.coverage.unwrap_or(0),
-            true,
-        ),
+        true => {
+            let alt_cov = path1.coverage.unwrap();
+            let ref_cov = coverage - alt_cov;
+            let (genotype, state) = match metrics::genotyper(ref_cov, alt_cov) {
+                // FC> This is ugly. We should call a separate genotyper for
+                // haploid regions.
+                metrics::GTstate::Ref => {
+                    ("0", metrics::GTstate::Ref)
+                }
+                metrics::GTstate::Het | metrics::GTstate::Hom => {
+                    ("1", metrics::GTstate::Hom)
+                }
+                _ => panic!("Cannot happen here"),
+            };
+            (genotype, state, alt_cov, path1.full_target)
+        },
         false if coverage != 0 => ("0", metrics::GTstate::Ref, 0, true),
         false => (".", metrics::GTstate::Non, 0, true),
     };
@@ -192,10 +202,9 @@ fn handle_diploid_two_paths<'a>(
                 ("0|0", metrics::GTstate::Ref)
             }
             metrics::GTstate::Het => {
-                let gt = match path.hp {
-                    None => "0|1",
-                    Some(1) => "0|1",
-                    _ => "1|0",
+                let gt = match path1.path.contains(var_idx) {
+                    true => "1|0",
+                    false => "0|1"
                 };
                 (gt, metrics::GTstate::Het)
             }
@@ -208,38 +217,6 @@ fn handle_diploid_two_paths<'a>(
         ("0|0", metrics::GTstate::Ref, 0, true)
     }
 }
-
-/*
-fn handle_diploid_two_paths<'a>(
-    var_idx: &NodeIndex,
-    path1: &PathScore,
-    path2: &PathScore,
-    coverage: u64,
-) -> HandleReturn<'a> {
-    match (path1.path.contains(var_idx), path2.path.contains(var_idx)) {
-        (true, true) => (
-            "1|1",
-            metrics::GTstate::Hom,
-            (path1.coverage.unwrap() + path2.coverage.unwrap()),
-            path1.full_target || path2.full_target,
-        ),
-        (true, false) => (
-            "1|0",
-            metrics::GTstate::Het,
-            path1.coverage.unwrap(),
-            path1.full_target,
-        ),
-        (false, true) => (
-            "0|1",
-            metrics::GTstate::Het,
-            path2.coverage.unwrap(),
-            path2.full_target,
-        ),
-        (false, false) if coverage != 0 => ("0|0", metrics::GTstate::Ref, 0, true),
-        (false, false) => ("./.", metrics::GTstate::Non, 0, true),
-    }
-}
-*/
 
 fn finalize_annotation(
     entry: RecordBuf,

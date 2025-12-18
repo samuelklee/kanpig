@@ -158,9 +158,9 @@ fn genotype_scores(alt1_cov: u64, alt2_cov: u64) -> [f64; 3] {
     // IMPL OF BETA-BINOMIAL MODEL, TIES OUT WITH PYRO BETA-BINOMIAL IMPL WHEN HYPERPARAMETERS ARE SET CLOSE TO PYRO-FIT VALUES
     // TODO expose these as CLI parameters
     // for now, roughly set to typical values seen in HPRC samples fit with pyro implementation
-    let frac: &[f64] = &[0.2, 0.6, 0.2];     // mixture weights
-    let mu: &[f64] = &[0.005, 0.49, 0.99];   // beta-binomial means
-    let nu: &[f64] = &[5.0, 50.0, 5.0];      // beta-binomial precisions
+    let frac: &[f64] = &[0.6, 0.3, 0.1];     // mixture weights
+    let mu: &[f64] = &[0.001, 0.5, 0.99];   // beta-binomial means
+    let nu: &[f64] = &[10.0, 200.0, 10.0];      // beta-binomial precisions
     let alpha: Vec<f64> = mu.iter().zip(nu.iter()).map(|(m, n)| m * n).collect();
     let beta: Vec<f64> = mu.iter().zip(nu.iter()).map(|(m, n)| (1.0 - m) * n).collect();
 
