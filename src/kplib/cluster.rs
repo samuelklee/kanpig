@@ -73,8 +73,8 @@ pub fn diploid_haplotypes(
         &mut rand::rngs::StdRng::seed_from_u64(21),
     );
 
-    let (loss, assignments, _, _): (f32, _, _, _) =
-        kmedoids::fasterpam(&distance_matrix.view(), &mut medoids, 100);
+    let (loss, assignments, _, _): (f64, _, _, _) =
+        kmedoids::fastermsc(&distance_matrix.view(), &mut medoids, 100);
     debug!("Loss: {}", loss);
 
     let mut haps = vec![haplos[medoids[0]].clone(), haplos[medoids[1]].clone()];
